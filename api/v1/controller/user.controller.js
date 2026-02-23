@@ -142,7 +142,7 @@ module.exports.forgotPassword = async (req, res) => {
         const objectForgotPassword = {
             email: email,
             otp: otp,
-            expireAt: new Date(Date.now() + timeExpire * 60)
+            expireAt: new Date(Date.now() + timeExpire * 60 * 1000)
         }
         const forgotPassword = new ForgotPassword(objectForgotPassword)
         await forgotPassword.save()
@@ -155,6 +155,54 @@ module.exports.forgotPassword = async (req, res) => {
         res.status(200).json({ message: "Đã gửi OTP thành công !" })
     } catch (error) {
         console.error("Login error:", error);
+        return res.status(500).json({ message: "Lỗi server" });
+    }
+};
+
+
+// [POST] api/v1/users/password/otp
+module.exports.otpPassword = async (req, res) => {
+    try {
+        const email = req.body.email
+        const otp = req.body.otp
+        const user = await User.find({
+            email: email,
+            deleted: false
+        })
+        if (!user) {
+            return res.status(400).json({
+                message: "Email không tồn tại",
+            });
+        }
+        const otpPassword = await ForgotPassword.findOne({
+            email: email,
+            otp: otp
+        })
+        if (otpPassword) {
+            const user = await User.findOne({
+                email: email,
+                deleted: false
+            })
+            if (!process.env.JWT_SECRET) {
+                return res.status(500).json({ message: "JWT_SECRET is not configured" });
+            }
+            const accessToken = jwt.sign(
+                { userId: user._id.toString() },
+                process.env.JWT_SECRET,
+                { expiresIn: "1h" } // thời gian sống token
+            );
+            return res.status(200).json({
+                success: true,
+                message: "Xác thực OTP thành công",
+                accessToken
+            })
+
+        }
+        else {
+            return res.status(400).json({ message: "OTP không hợp lệ" })
+        }
+    } catch (error) {
+        console.error("OTP error:", error);
         return res.status(500).json({ message: "Lỗi server" });
     }
 };
