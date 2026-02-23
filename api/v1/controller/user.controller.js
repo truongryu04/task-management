@@ -163,46 +163,87 @@ module.exports.forgotPassword = async (req, res) => {
 // [POST] api/v1/users/password/otp
 module.exports.otpPassword = async (req, res) => {
     try {
-        const email = req.body.email
-        const otp = req.body.otp
-        const user = await User.find({
+        const email = req.body.email;
+        const otp = req.body.otp;
+
+        const user = await User.findOne({
             email: email,
             deleted: false
-        })
+        });
+
         if (!user) {
             return res.status(400).json({
                 message: "Email không tồn tại",
             });
         }
-        const otpPassword = await ForgotPassword.findOne({
+
+        const otpRecord = await ForgotPassword.findOne({
             email: email,
             otp: otp
-        })
-        if (otpPassword) {
-            const user = await User.findOne({
-                email: email,
-                deleted: false
-            })
-            if (!process.env.JWT_SECRET) {
-                return res.status(500).json({ message: "JWT_SECRET is not configured" });
-            }
-            const accessToken = jwt.sign(
-                { userId: user._id.toString() },
-                process.env.JWT_SECRET,
-                { expiresIn: "1h" } // thời gian sống token
-            );
-            return res.status(200).json({
-                success: true,
-                message: "Xác thực OTP thành công",
-                accessToken
-            })
+        });
 
+        if (!otpRecord) {
+            return res.status(400).json({ message: "OTP không hợp lệ hoặc đã hết hạn" });
         }
-        else {
-            return res.status(400).json({ message: "OTP không hợp lệ" })
+
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({ message: "JWT_SECRET is not configured" });
         }
+
+        const accessToken = jwt.sign(
+            { userId: user._id.toString() },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Xác thực OTP thành công",
+            accessToken
+        });
     } catch (error) {
         console.error("OTP error:", error);
+        return res.status(500).json({ message: "Lỗi server" });
+    }
+};
+
+// [POST] api/v1/users/password/reset
+module.exports.resetPassword = async (req, res) => {
+    try {
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ message: "Vui lòng nhập mật khẩu mới" });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
+        }
+
+        const user = await User.findOne({
+            _id: req.userId,
+            deleted: false
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: "Người dùng không tồn tại" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        user.password = hashedPassword;
+        await user.save();
+
+        // Có thể xoá OTP sau khi đổi mật khẩu (không bắt buộc)
+        await ForgotPassword.deleteMany({ email: user.email });
+
+        return res.status(200).json({
+            success: true,
+            message: "Đổi mật khẩu thành công",
+        });
+    } catch (error) {
+        console.error("Reset password error:", error);
         return res.status(500).json({ message: "Lỗi server" });
     }
 };
