@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
+const User = require("../model/user.model");
 
-// Middleware kiểm tra JWT trong header Authorization: Bearer <token>
-module.exports.verifyToken = (req, res, next) => {
+module.exports.verifyToken = async (req, res, next) => {
     try {
         const authHeader = req.headers["authorization"] || req.headers["Authorization"]; // đề phòng khác kiểu viết hoa
 
@@ -17,8 +17,20 @@ module.exports.verifyToken = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // Lưu thông tin user từ token để dùng ở các handler sau
+        // Lưu userId từ token
         req.userId = decoded.userId;
+
+        const user = await User.findOne({
+            _id: decoded.userId,
+            deleted: false,
+        }).select("-password");
+
+        if (!user) {
+            return res.status(401).json({ message: "Tài khoản không tồn tại hoặc đã bị xoá" });
+        }
+
+        // Gán user vào req để dùng ở các handler sau
+        req.user = user;
 
         return next();
     } catch (error) {
