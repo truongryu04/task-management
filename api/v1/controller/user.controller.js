@@ -247,3 +247,23 @@ module.exports.resetPassword = async (req, res) => {
         return res.status(500).json({ message: "Lỗi server" });
     }
 };
+
+
+// [GET] api/v1/users/detail
+module.exports.getDetail = async (req, res) => {
+    try {
+        const userId = req.userId
+        const user = await User.findOne({
+            _id: userId,
+            deleted: false
+        }).select("fullName email")
+        res.status(200).json({
+            success: true,
+            message: "Lấy thông tin tài khoản thành công",
+            data: user
+        })
+    } catch (error) {
+        return res.status(500).json({ message: "Lỗi server" });
+    }
+
+}
