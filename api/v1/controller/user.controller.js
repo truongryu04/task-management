@@ -267,3 +267,20 @@ module.exports.getDetail = async (req, res) => {
     }
 
 }
+
+// [GET] api/v1/users/detail
+module.exports.listUser = async (req, res) => {
+    try {
+        const users = await User.find({
+            deleted: false
+        }).select("fullName email")
+        res.status(200).json({
+            success: true,
+            message: "Thành công",
+            data: users
+        })
+    } catch (error) {
+        return res.status(500).json({ message: "Lỗi server" });
+    }
+
+}
