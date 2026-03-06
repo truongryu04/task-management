@@ -119,8 +119,11 @@ module.exports.changeMulti = async (req, res) => {
 // [POST] api/v1/tasks/create
 module.exports.create = async (req, res) => {
     try {
+        const user = req.user
+        req.body.createdBy = user.id
         const task = new Task(req.body)
         const data = await task.save()
+
         res.json({
             code: 201,
             message: "Tạo mới thành công",
