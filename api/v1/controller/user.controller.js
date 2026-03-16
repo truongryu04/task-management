@@ -284,3 +284,52 @@ module.exports.listUser = async (req, res) => {
     }
 
 }
+
+// [PATCH] api/v1/users/password/change
+module.exports.changePassword = async (req, res) => {
+    const { oldPassword, newPassword, confirmPassword } = req.body
+    const userId = req.user.id
+    try {
+        const user = await User.findOne({
+            _id: userId,
+        })
+        if (!user) {
+            return res.status(404).json({
+                message: "User không tồn tại"
+            });
+        }
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({
+                message: "Sai mật khẩu ",
+            });
+        }
+        if (oldPassword === newPassword) {
+            return res.status(400).json({
+                message: "Mật khẩu mới không được trùng mật khẩu cũ"
+            })
+        }
+        if (newPassword.length < 8) {
+            return res.status(400).json({
+                message: "Mật khẩu quá ngắn",
+            });
+        }
+        if (newPassword !== confirmPassword) {
+            return res.status(400).json({
+                message: "Mật khẩu xác nhận không đúng",
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        user.password = hashedPassword;
+        await user.save();
+        res.status(200).json({
+            success: true,
+            message: "Thay đổ mật khẩu thành công",
+        })
+    } catch (error) {
+        return res.status(500).json({
+            message: "Lỗi server",
+        });
+    }
+}
