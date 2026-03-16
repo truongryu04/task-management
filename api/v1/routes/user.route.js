@@ -10,4 +10,6 @@ router.post('/password/reset', verifyToken, controller.resetPassword)
 router.get('/detail', verifyToken, controller.getDetail)
 router.get('/list', verifyToken, controller.listUser)
 router.patch('/password/change', verifyToken, controller.changePassword)
+router.post('/refresh-token', verifyToken, controller.refreshToken)
+router.post('/logout', verifyToken, controller.logout)
 module.exports = router;

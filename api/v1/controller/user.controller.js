@@ -338,3 +338,55 @@ module.exports.changePassword = async (req, res) => {
     }
 }
 
+// [POST] api/v1/users/refresh-token
+module.exports.refreshToken = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ success: false, message: "Thiếu refreshToken" });
+        }
+
+        const stored = await RefreshToken.findOne({ token: refreshToken });
+        if (!stored) {
+            return res.status(401).json({ success: false, message: "Refresh token không hợp lệ" });
+        }
+
+        // Verify JWT
+        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, async (err, decoded) => {
+            if (err) {
+                // Hết hạn hoặc sai → xóa luôn trong DB
+                await RefreshToken.deleteOne({ _id: stored._id });
+                return res.status(401).json({ success: false, message: "Refresh token hết hạn/không hợp lệ" });
+            }
+
+            const payload = { userId: decoded.userId };
+            const accessToken = generateAccessToken(payload);
+            return res.json({
+                success: true,
+                message: "Refresh token thành công",
+                accessToken,
+            });
+        });
+    } catch (error) {
+        console.error("Refresh token error:", error);
+        return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+};
+
+// [POST] api/v1/users/logout
+module.exports.logout = async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ success: false, message: "Thiếu refreshToken" });
+        }
+        await RefreshToken.deleteOne({ token: refreshToken });
+        return res.json({
+            success: true,
+            message: "Đăng xuất thành công",
+        });
+    } catch (error) {
+        console.error("Logout error:", error);
+        return res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+};
