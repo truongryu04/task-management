@@ -11,11 +11,13 @@ module.exports.verifyToken = async (req, res, next) => {
 
         const token = authHeader.split(" ")[1];
 
-        if (!process.env.JWT_SECRET) {
-            return res.status(500).json({ message: "JWT_SECRET is not configured" });
+        const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || process.env.JWT_SECRET;
+
+        if (!accessTokenSecret) {
+            return res.status(500).json({ message: "ACCESS_TOKEN_SECRET/JWT_SECRET is not configured" });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, accessTokenSecret);
 
         // Lưu userId từ token
         req.userId = decoded.userId;
@@ -28,8 +30,6 @@ module.exports.verifyToken = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({ message: "Tài khoản không tồn tại hoặc đã bị xoá" });
         }
-
-        // Gán user vào req để dùng ở các handler sau
         req.user = user;
 
         return next();

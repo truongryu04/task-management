@@ -4,6 +4,8 @@ const User = require('../model/user.model')
 const ForgotPassword = require('../model/forgot-password.model')
 const generate = require('../../../helpers/generate')
 const sendMailHelper = require('../../../helpers/sendMail')
+const { generateAccessToken, generateRefreshToken } = require("../../../helpers/jwt");
+const RefreshToken = require("../model/refresh-token.model");
 // Hàm helper đơn giản để validate email
 const isValidEmail = (email) => {
     // Regex đơn giản, đủ dùng cho đa số trường hợp
@@ -103,19 +105,21 @@ module.exports.login = async (req, res) => {
                 message: "Sai mật khẩu ",
             });
         }
+        const payload = { userId: user._id.toString() };
 
-        if (!process.env.JWT_SECRET) {
-            return res.status(500).json({ message: "JWT_SECRET is not configured" });
-        }
-
-        const token = jwt.sign(
-            { userId: user._id.toString() },
-            process.env.JWT_SECRET,
-            { expiresIn: "1h" }
-        );
+        const accessToken = generateAccessToken(payload);
+        const refreshToken = generateRefreshToken(payload);
+        await RefreshToken.create({
+            userId: user._id,
+            token: refreshToken,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 ngày
+        });
 
         return res.json({
-            token: token
+            success: true,
+            message: "Đăng nhập thành công",
+            accessToken,
+            refreshToken,
         });
     } catch (error) {
         console.error("Login error:", error);
@@ -333,3 +337,4 @@ module.exports.changePassword = async (req, res) => {
         });
     }
 }
+
