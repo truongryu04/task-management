@@ -21,7 +21,7 @@ module.exports.index = async (req, res) => {
     // Phân quyền
     let initPagination = {
         currentPage: 1,
-        limitItems: 2
+        limitItems: 5
     }
     const countTask = await Task.countDocuments(find)
     const objectPagination = paginationHelper(initPagination, req.query, countTask)
@@ -180,6 +180,42 @@ module.exports.delete = async (req, res) => {
         res.json({
             code: 400,
             message: "Lỗi"
+        })
+    }
+}
+
+// [GET] api/v1/tasks/calendar
+module.exports.getCalendarTasks = async (req, res) => {
+    const start = new Date(req.query.start)
+    const end = new Date(req.query.end)
+    try {
+        const user = req.user
+        const tasks = await Task.find({
+            deleted: false,
+            listUser: user.id,
+            $or: [
+                {
+                    timeStart: { $gte: start, $lte: end }
+                },
+                {
+                    dueDate: { $gte: start, $lte: end }
+                },
+                {
+                    timeFinish: { $gte: start, $lte: end }
+                }
+            ]
+        })
+        const result = tasks.map(task => ({
+            id: task._id,
+            title: task.title,
+            start: task.timeStart,
+            end: task.dueDate || task.timeFinish,
+            status: task.status
+        }))
+        res.status(200).json(result)
+    } catch (error) {
+        res.status(500).json({
+            message: "Lỗi server"
         })
     }
 }

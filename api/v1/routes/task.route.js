@@ -11,7 +11,7 @@ router.patch('/change-multi', verifyToken, controller.changeMulti)
 router.post('/create', verifyToken, controller.create)
 router.patch('/edit/:id', verifyToken, controller.edit)
 router.delete('/delete/:id', verifyToken, controller.delete)
-
+router.get('/calendar', verifyToken, controller.getCalendarTasks)
 
 
 

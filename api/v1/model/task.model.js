@@ -9,6 +9,7 @@ const TaskSchema = new mongoose.Schema(
         completedAt: Date,
         createdBy: String,
         listUser: Array,
+        dueDate: Date,
         taskParentId: String,
         tags: Array,
         description: String,
