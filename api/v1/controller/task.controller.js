@@ -56,20 +56,25 @@ module.exports.detail = async (req, res) => {
 module.exports.changeStatus = async (req, res) => {
     try {
         const id = req.params.id
+
         const status = req.body.status
+        const data = {
+            status: status
+        }
+        if (status === "completed") {
+            data.completedAt = new Date()
+        } else {
+            data.completedAt = null
+        }
         await Task.updateOne({
             _id: id
-        }, {
-            status: status
-        })
-        res.json({
-            code: 200,
+        }, data)
+        res.status(200).json({
             message: "Cập nhật trạng thái thành công!"
         })
     } catch (error) {
-        res.json({
-            code: 404,
-            message: "Không tồn tại"
+        res.status(500).json({
+            message: "Lỗi server"
         })
     }
 }
