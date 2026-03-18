@@ -112,6 +112,4 @@ Các route nhạy cảm yêu cầu header `Authorization: Bearer <access_token>`
 Tất cả route task yêu cầu đăng nhập (JWT) và sử dụng `verifyToken` để gắn thông tin user vào request.
 
 ## 6. Ghi chú
-
-- Dự án được thiết kế hướng tới việc dùng làm backend cho web/mobile client.
 - Có thể deploy nhanh lên Vercel thông qua file `vercel.json`.
